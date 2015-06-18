@@ -1,0 +1,91 @@
+---
+title: "Sampling and Distribution"
+author: "Ran Ju"
+output:
+  pdf_document:
+    toc: false
+---
+# Overview
+We will estimate the distribution of sample mean and variance of exponential random variables, and compare them to normal distribution.  To be able to reproduce the result, the random seed will be set to 344344 and the random variables $\sim Exp(0.2)$.
+
+# Simulation
+We use sample size = 40, and run the simulation 1000 times.  [Here](#sim) is the code for doing that, and there is also a histogram of all samples combined.  Note the scaled exponential distribution PDF and the histogram line match very closely.
+
+# Sample Mean
+[Here](#smh) is the sample mean histogram.  The theoratical mean is computed as $1 \over \lambda$ where $\lambda = 0.2$.
+
+# Sample Variance
+[Here](#svh) is the sample variance histogram.  The theoratical mean is equal to the mean of each random variable, i.e., $({1 \over \lambda})^2 = 25$.  Note this is not the variance of the sample mean.
+
+$\text{var(sample mean)} = \text{sample variance} / \text{sample size} = 25 / 40 = 0.625$
+
+# Sample Mean Distribution
+We plot the sample mean again, but overlay the scaled normal distribution $\mathcal{N}(\text{sample mean}, \text{var(sample mean)})$.  [Here](#smh2) shows the plot.  Clearly the scaled normal distribution (the blue line) and the histogram match up, hence showing the sample mean distribution is approximately normal. 
+
+# Appendix
+### Simulation {#sim}
+```{r}
+library(ggplot2)
+# Set the random seed
+set.seed(344344)
+# Simulation
+sims <- NULL
+for (i in 1:1000) sims <- rbind(sims, rexp(40, 0.2))
+# Store the sample mean and variance into a data frame
+mv <- data.frame(mean = apply(sims, 1, mean), var = apply(sims, 1, var))
+# Plot histogram and exponential distribution line (scaled by the sample size)
+ggplot() +
+  geom_histogram(aes(x = as.vector(sims)), binwidth = 1, alpha = 0.5) +
+  geom_line(aes(x = seq(0, 50, 0.1), y = 0.2 * exp(-0.2 * seq(0, 50, 0.1)) * 40000), color = "#FF0000") +
+  ggtitle("Sample Histogram")
+```
+
+### Sample Mean Histogram {#smh}
+```{r}
+# Compute the mean of the sample means
+mean(mv$mean)
+```
+```{r}
+# Plot the histogram, sample mean and theoratical mean
+ggplot() + 
+  geom_histogram(aes(x = mv$mean), alpha = 0.5, binwidth = 0.05) + 
+  geom_vline(aes(xintercept = mean(mv$mean), color = "Sample mean"), show_guide = T) + 
+  geom_vline(aes(xintercept = 1 / 0.2, color = "Theoratical mean"), show_guide = T) +
+  xlab("") +
+  ggtitle("Sample Mean Distribution")
+```
+
+### Sample Variance Histogram {#svh}
+```{r}
+# Compute the mean of the sample means
+mean(mv$var)
+```
+```{r}
+# Plot the histogram, sample mean and theoratical mean
+ggplot() + 
+  geom_histogram(aes(x = mv$var), alpha = 0.5, binwidth = 1) + 
+  geom_vline(aes(xintercept = mean(mv$var), color = "Sample variance"), show_guide = T) + 
+  geom_vline(aes(xintercept = (1 / 0.2) ^ 2, color = "Theoratical variance"), show_guide = T) +
+  xlab("") +
+  ggtitle("Sample Variance Distribution")
+```
+
+### Sample Mean Histogram {#smh2}
+```{r}
+# Create x values for plotting normal PDF
+x <- seq(min(mv$mean), max(mv$mean), by = 0.1)
+# Theoratical mean
+m <- 1 / 0.2
+# Theoratical standard deviation
+sd <- sqrt((1/ 0.2) ^ 2 / 40)
+# Calculate normal PDF, scaled by the number of samples
+y <- dnorm(x, mean = m, sd = sd) * 1000 * 0.1
+# Plot the histogram, sample mean and theoratical mean
+ggplot() + 
+  geom_histogram(aes(x = mv$mean), alpha = 0.5, binwidth = 0.1) + 
+  geom_vline(aes(xintercept = mean(mv$mean), color = "Sample mean"), show_guide = T) + 
+  geom_vline(aes(xintercept = 1 / 0.2, color = "Theoratical mean"), show_guide = T) +
+  geom_line(aes(x = x, y = y), color = "blue") +
+  xlab("") +
+  ggtitle("Sample Mean Distribution")
+```
